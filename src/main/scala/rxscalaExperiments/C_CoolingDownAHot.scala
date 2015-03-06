@@ -3,13 +3,13 @@ package rxscalaExperiments
 import scala.concurrent.duration._
 import rx.lang.scala.Observable
 
-object CoolingDownAHot extends App {
+object C_CoolingDownAHot extends App {
 
   val tick = HotInterval(1000 millis)
   // using Merge
-  //val tock = Observable.just[Long](999, 888, 777).merge(tick)
+//  val tock = Observable.just[Long](999, 888, 777).merge(tick)
   // using Concat
-  //val tock = Observable.just[Long](999, 888, 777) ++ tick
+//  val tock = Observable.just[Long](999, 888, 777) ++ tick
   // using StartsWith
   val tock = 777 +: tick
 

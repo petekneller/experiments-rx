@@ -3,7 +3,7 @@ package rxscalaExperiments
 import scala.concurrent.duration._
 
 
-object MyHotInterval extends App {
+object B_MyHotInterval extends App {
 
   val tick = HotInterval(1000 millis)
 
@@ -12,4 +12,8 @@ object MyHotInterval extends App {
 
   Thread.sleep(2500) // what happens if I subscribe mid-event?
   tick map { e => s"time 2: $e" } foreach { e => println(e) }
+
+  // a non-sideffectful combinator (like map is supposed to be) does not seem to create a subscription
+  tick map { e => val e2 = s"time 3: $e"; println(e2); e2 } // foreach { e => println(e) }
+
 }

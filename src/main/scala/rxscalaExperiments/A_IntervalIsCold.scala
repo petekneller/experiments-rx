@@ -4,7 +4,7 @@ import rx.lang.scala.Observable
 
 import scala.concurrent.duration._
 
-object IntervalIsCold extends App {
+object A_IntervalIsCold extends App {
 
   // It seems that .interval is cold - a long wait before subscribing makes no difference
   val tick = Observable.interval(1000 millis)
@@ -17,5 +17,6 @@ object IntervalIsCold extends App {
   tick map { e => s"time 2: $e" } foreach { e => println(e) }
 
   // Nope, it starts again!
+  Thread.sleep(5000)
 
 }
