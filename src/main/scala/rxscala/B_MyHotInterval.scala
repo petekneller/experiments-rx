@@ -1,4 +1,4 @@
-package rxscalaExperiments
+package rxscala
 
 import scala.concurrent.duration._
 

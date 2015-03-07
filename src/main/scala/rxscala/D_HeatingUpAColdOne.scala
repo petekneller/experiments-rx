@@ -1,4 +1,4 @@
-package rxscalaExperiments
+package rxscala
 
 import rx.lang.scala.Observable
 
