@@ -4,6 +4,7 @@ import java.util.concurrent.TimeoutException
 
 import org.scalatest.FunSuite
 
+import scalaz.Memo
 import scalaz.concurrent.Future
 import scala.concurrent.duration._
 
@@ -100,6 +101,28 @@ class FutureExampleTest extends FunSuite {
     val f3 = f2 flatMap { v => printThread("f3"); Future.delay(v) }
     //f3.run
     Future.fork(f3).run
+  }
+
+  test("the equivalent of scala.Future?") {
+
+    // memoize it
+    def f(n: Int): String = { printThread(s"long running computation [$n]"); Thread.sleep(1000); println(s"finishing long running computation [$n]"); s"$n" }
+    val m = Memo.immutableMapMemo(Map.empty[Int, String])
+
+    // and start it async, immediately
+    val f1 = Future.apply{ m(f)(2) }.start
+
+    Thread.sleep(2000)
+    printThread("'awaiting future'")
+    println(f1.run)
+    println(f1.run)
+    f1.runAsync(println(_))
+
+    // is this all too flexible? When I'm working in a codebase with these futures, what do I presume about the computation?
+    // If we're using them like Scala futures, its safe to combine one repeatedly without concern that any long-running comp will be re-executed
+    //   But re-evaluating a function requires building a new future explicitly
+    // If we're using them raw, then they provide a neat means of combination and predictable concurrency behaviour
+    //   But you need to remember that they are just a deferred computation, and you need to be aware that each call-site is a new thread of execution
   }
 
   ignore("how does the trampolining work?") {}
