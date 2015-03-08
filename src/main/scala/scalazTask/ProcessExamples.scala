@@ -24,4 +24,17 @@ object ProcessNothing extends App {
     override def fail[A](err: Throwable): List[A] = throw err
   }
   println(s"b.runLog = ${b.runLog}")
+
+  // the Id monad?
+}
+
+object ProcessStructure extends App {
+
+  // create some raw Emit, Await and run them manually
+
+  // compose pure (emit) with non-pure (await) and see how it affects the shape/outcome of the stream
+
+  // do some println's inside the stream to see how the computation progresses
+
+  // how does |> work for Process1's?
 }
