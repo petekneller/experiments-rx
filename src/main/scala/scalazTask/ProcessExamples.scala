@@ -1,9 +1,10 @@
 package scalazTask
 
-import scalaz.{\/-, \/, Catchable}
+import scalaz.{Id, \/-, \/, Catchable}
 import scalaz.concurrent._
 import scalaz.stream.{Process0, Process}
 import scalaz.std.list._
+import scalaz.Id._
 
 object ProcessNothing extends App {
 
@@ -25,10 +26,18 @@ object ProcessNothing extends App {
   }
   println(s"b.runLog = ${b.runLog}")
 
-  // the Id monad?
+  // Id monad
+  val d: Process[Id, Int] = a
+  implicit val idCatchable = new Catchable[Id] {
+    override def attempt[A](a: Id[A]): Id[Throwable \/ A] = id.point(\/-(a))
+    override def fail[A](err: Throwable): Id[A] = throw err
+  }
+  println(s"d.runLog = ${d.runLog}")
 }
 
 object ProcessStructure extends App {
+
+  
 
   // create some raw Emit, Await and run them manually
 
