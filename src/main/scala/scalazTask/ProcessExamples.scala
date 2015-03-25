@@ -4,7 +4,7 @@ import scalaz.Id
 import scalaz.stream.Process.Halt
 import scalaz._
 import scalaz.concurrent._
-import scalaz.stream.{Cause, Process0, Process}
+import scalaz.stream._
 import scalaz.std.list._
 import scalaz.Id._
 
@@ -78,7 +78,7 @@ object Combinators extends App {
   println(a.map(_+1))
   println(a.flatMap(m => Process.emit(m+1)))
 
-  val c: Process[Task, Int] = Process.emit(1).repeat // look at the impl of this - its wild!
+  val c: Process[Task, Int] = Process.emit(1).repeat // look at the impl of .repeat - its wild!
   println(c)
   println(c.take(10).runLog.run)
 
@@ -102,8 +102,38 @@ object ChangingMonadicContext extends App {
   
 }
 
-object Program1 extends App {
-  // how does |> work for Process1's?
+object Process1 extends App {
+  // Process1 is a Process that uses an upstream process as its 'effect system' - mechanised with the 'Env' type
+  val c: Process1[Int, Int] = Process.await(Process.Get[Int])(i => Process.emit(i * 2))
+  println(c)
+  val c2: Process[Task, Int] = Process(1, 2, 3) |> c
+  println(c2)
+  println(c2.runLog.run)
+
+  // receive1 is the Process1 equivalent of await in Process0 - it awaits a single value from the upstream process
+  // and then calls the supplied fn to decide how to proceed.
+  // Contrast this example with the one above
+  val b: Process[Task, Int] = Process(1, 2, 3) |> Process.receive1(i => Process.emit(i * 2))
+  println(b)
+  println(b.runLog.run)
+
+  // await1 is the equivalent of my example above - it awaits a single item and then emits it
+  // It's sort of the Process equivalent of List.head
+  // NB that the following pipeline only awaits/emits 1 item from the upstream Process. And this is also a good example
+  // of streams pull nature - the side effect is not run in this case because the second value is never requested
+  val a: Process[Task, Int] = Process(1, 2) ++ Process{ println("boo!"); 2 } |> Process.await1
+  println(a)
+  println(a.runLog.run)
+
+  // process1.lift is your basic operator to create Process1's out of fn's
+  val d: Process[Task, Int] = Process(1, 2, 3) |> process1.lift(_ * 2)
+  println(d)
+  println(d.runLog.run)
+
+  // feed
+  val e: Process[Task, Int] = Process(1, 2, 3) |> process1.feed(Seq(4, 5, 6))(process1.id)
+  println(e)
+  println(e.runLog.run)
 }
 
 object Util {
