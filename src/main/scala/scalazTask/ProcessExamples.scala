@@ -104,6 +104,7 @@ object ChangingMonadicContext extends App {
 
 object Process1 extends App {
   // Process1 is a Process that uses an upstream process as its 'effect system' - mechanised with the 'Env' type
+  // It's kind of like a first-class Process version of
   val c: Process1[Int, Int] = Process.await(Process.Get[Int])(i => Process.emit(i * 2))
   println(c)
   val c2: Process[Task, Int] = Process(1, 2, 3) |> c
@@ -130,7 +131,7 @@ object Process1 extends App {
   println(d)
   println(d.runLog.run)
 
-  // feed
+  // feed creates a Process1 that has baked into it the a seq of items that it will receive upon execution
   val e: Process[Task, Int] = Process(1, 2, 3) |> process1.feed(Seq(4, 5, 6))(process1.id)
   println(e)
   println(e.runLog.run)
