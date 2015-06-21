@@ -72,7 +72,7 @@ object Combinators extends App {
   println(b.map(_+1))
   println(b.flatMap(m => Process.emit(m+1)))
 
-  // Note how the below looks exactly like the above - the single process containing Seq(1, 2, 3) looks like it gets
+  // Note how the below looks exactly like the above - the single process coProcess(1): Process[Task, Int]ntaining Seq(1, 2, 3) looks like it gets
   // unravelled during the flatMap to a Process of Seq(1) and a Process of the rest
   val a = Process(1, 2, 3)
   println(a.map(_+1))
@@ -86,6 +86,11 @@ object Combinators extends App {
   // - see my example above for how I read from a list, then compare to the impl of 'eval'
   val d = Process.eval(Task.delay{ 2 })
   println(d.runLog.run)
+
+  // NB that although these two have the same results they are NOT the same
+  // Process.constant lifts a pure value, whereas Process.eval.repeat implies re-evaluating side effects each time
+  println(Process.eval(Task.delay{ 2 }).repeat.take(5).runLog.run)
+  println((Process.constant(2).take(5): Process[Task, Int]).runLog.run)
 }
 
 object ChangingMonadicContext extends App {
@@ -136,6 +141,84 @@ object Process1 extends App {
   println(e)
   println(e.runLog.run)
 }
+
+object ChannelsAndSinks extends App {
+  // Channel encapsulates the idea of a stream of effectful-functions
+  
+  // a trivial channel of constant behaviour that does some expensive op and then maps the given value
+  val ch1: Channel[Task, Int, Int] = io.channel[Task, Int, Int](v => Task.delay{ /* expensive stuff happens here */ v * 2 })
+  // or alternatively...
+  val ch2: Channel[Task, Int, Int] = Process.constant(v => Task.delay{ /* expensive stuff happens here */ v * 2 })
+  
+  val a: Process[Task, Int] = Process(1, 2, 3)
+
+  // values from a process can be passed through the channel like so
+  val b = a zip ch1 flatMap { case (v, f) => Process.eval(f(v)) }
+  println(b.runLog.run)
+  // or, more succintly
+  val c = a through ch1
+  println(c.runLog.run)
+
+  // a Sink is a Channel specialized to have Unit result
+  val snk: Sink[Task, Int] = Process.constant(v => Task.delay{ println(v) })
+  val d = a zip snk flatMap { case (v, f) => Process.eval(f(v)) }
+  println(d.runLog.run)
+  // or, more succintly
+  val e = a to snk
+  println(e.runLog.run)
+  // however in this case its unlikely you care about the result values and sProcess(1): Process[Task, Int]o would use 'run' instead of 'runLog'
+  println(e.run.run)
+
+  // 'observe' is nice; just like 'tee' in bash it pipes the values to a sink as well as carrying them along as usual
+  val f = a observe snk
+  println(f.runLog.run)
+}
+
+object Tees extends App {
+  // the most basic Tees zip things...
+  val l: Process[Task, Int] = Process(1, 2, 3)
+  val r: Process[Task, Int] = Process(4, 5, 6)
+  println((l zip r).runLog.run)
+  
+  // or interleave things
+  println((l interleave r).runLog.run)
+
+  // the Tees themselves are actually attached using the .tee combinator of Process, specifying the other side and the Tee algorithmn
+  val a = l.tee(r)(stream.tee.zip)
+  println(a.runLog.run)
+  val b = l.tee(r)(stream.tee.interleave)
+  println(b.runLog.run)
+  
+  // the fundamental component of a Tee is the awaitL/R that fetches one side then stops; its the basis of the rest of the combinators
+  val t1: Tee[Int, Int, Int] = Process.awaitL
+  println(l.tee(r)(t1).runLog.run)
+  val t2: Tee[Int, Int, Int] = for {
+    l <- Process.awaitL[Int]
+    r <- Process.awaitR[Int]
+    out <- Process.emit(l) ++ Process.emit(r)
+  } yield out
+  println(l.tee(r)(t2).runLog.run)
+
+  // some interesting Tees...
+
+  // drainL/R and passL/R are similar, but one totally ignores a branch, and the other reads, then ignores a branch
+  // the difference is apparent with side-effects
+  val l2: Process[Task, Int] = Process(1) ++ Process{ println("boo!"); 2 } ++ Process(3)
+
+  val c = l2.tee(r)(tee.drainL)
+  println(c.runLog.run)
+  val d = l2.tee(r)(tee.passR)
+  println(d.runLog.run)
+
+}
+
+object Writer extends App
+
+// TODO?
+// wye
+// Writer
+// queues, signals
+// gather, mergeN
 
 object Util {
 
