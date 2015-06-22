@@ -201,7 +201,7 @@ object Tees extends App {
 
   // some interesting Tees...
 
-  // drainL/R and passL/R are similar, but one totally ignores a branch, and the other reads, then ignores a branch
+  // drainL/R and passL/R are similar, but one totally ignores a branch; the other reads, then ignores, a branch
   // the difference is apparent with side-effects
   val l2: Process[Task, Int] = Process(1) ++ Process{ println("boo!"); 2 } ++ Process(3)
 
@@ -210,15 +210,21 @@ object Tees extends App {
   val d = l2.tee(r)(tee.passR)
   println(d.runLog.run)
 
+  // can use one branch of a tee to control when to read the other...
+  val e: Process[Task, Boolean] = Process(false, true, false)
+  val f = e.tee(r)(tee.when)
+  println(f.runLog.run)
+
+  val g = e.tee(r)(tee.until)
+  println(g.runLog.run)
 }
 
 object Writer extends App
 
 // TODO?
-// wye
 // Writer
 // queues, signals
-// gather, mergeN
+// wye gather, mergeN
 
 object Util {
 
