@@ -219,7 +219,11 @@ object Tees extends App {
   println(g.runLog.run)
 }
 
-object Writer extends App
+object Writer extends App {
+
+
+
+}
 
 // TODO?
 // Writer
