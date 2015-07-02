@@ -18,7 +18,8 @@ object Connections {
   val console: Sink[Task, String] = constant((s: String) => Task.delay{ println(s) })
 
   class Data {
-    var contents: List[String] = List.fill(20)(nextString(10))
+    val n = 20
+    var contents: List[String] = List.fill(n)(nextString(10)).zipWithIndex.map{ case (e, idx) => s"Data ${idx+1}/$n: $e" }
     val initialSize = contents.size
     def take(): String = contents match {
       case h :: t => { contents = t; h }
@@ -28,7 +29,11 @@ object Connections {
     def report: String = s"Data: initial [$initialSize]; remaining [${contents.size}]"
   }
 
-  def readData(data: Data): Process[Task, String] = eval(Task.delay{ data.take() }).repeat
+  def readData(data: Data, conn: Connection): Process[Task, String] = eval(Task.delay{ data.take() }).map(s => s"$conn: $s").repeat.onFailure(_ => halt)
+
+  val boom: Process[Task, Nothing] = fail(new RuntimeException("simulated connection failure!"))
+
+  val reportFailureAndHalt: Throwable => Process[Task, Nothing] = { thr => await(Task.delay{ println(s"read failed with [$thr]") })(_ => halt) }
 }
 
 import Connections._
@@ -37,7 +42,7 @@ object Attempt0 extends App { // an infinite amount of data, bitten off in rando
 
   def readSomeData(con: Connection): Process[Task, String] = {
     val numLinesBeforeFail = nextInt(5)
-    fill(numLinesBeforeFail)(s"$con: ${nextString(10)}") ++ Process.fail(new RuntimeException("argh!"))
+    fill(numLinesBeforeFail)(s"$con: ${nextString(10)}") ++ boom
   }
 
   val results = fiveAttempts flatMap { con => readSomeData(con) }
@@ -49,9 +54,9 @@ object Attempt0 extends App { // an infinite amount of data, bitten off in rando
 object Attempt1 extends App { // same as above, but with fixed amount of data
   val data = new Data
 
-  def readSomeData(con: Connection): Process[Task, String] = {
+  def readSomeData(conn: Connection): Process[Task, String] = {
     val numLinesBeforeFail = nextInt(5)
-    readData(data).map(s => s"$con: $s").take(numLinesBeforeFail) ++ Process.fail(new RuntimeException("argh!"))
+    readData(data, conn).take(numLinesBeforeFail) ++ boom
   }
 
   val results = fiveAttempts flatMap { con => readSomeData(con) }
@@ -64,9 +69,9 @@ object Attempt2 extends App { // same as above with better failure handling on r
   // allowing progress to the next connection
   val data = new Data
 
-  def readSomeData(con: Connection): Process[Task, String] = {
+  def readSomeData(conn: Connection): Process[Task, String] = {
     val numLinesBeforeFail = nextInt(5)
-    readData(data).map(s => s"$con: $s").take(numLinesBeforeFail) ++ Process.fail(new RuntimeException("argh!")) onFailure(thr => await(Task.delay{ println(s"read failed with [$thr]") })(_ => halt))
+    readData(data, conn).take(numLinesBeforeFail) ++ boom onFailure reportFailureAndHalt
   }
 
   val results = fiveAttempts flatMap { con => readSomeData(con) }
@@ -78,9 +83,9 @@ object Attempt2 extends App { // same as above with better failure handling on r
 object Attempt3 extends App { // demo of what happens when you have enough conns to exhaust the whole data stream
   val data = new Data
 
-  def readSomeData(con: Connection): Process[Task, String] = {
+  def readSomeData(conn: Connection): Process[Task, String] = {
     val numLinesBeforeFail = nextInt(5)
-    readData(data).map(s => s"$con: $s").take(numLinesBeforeFail) ++ Process.fail(new RuntimeException("argh!")) onFailure(thr => await(Task.delay{ println(s"read failed with [$thr]") })(_ => halt))
+    readData(data, conn).take(numLinesBeforeFail) ++ boom onFailure reportFailureAndHalt
   }
 
   val results = connections.take(20) flatMap { con => readSomeData(con) }
@@ -92,10 +97,10 @@ object Attempt3 extends App { // demo of what happens when you have enough conns
 object Attempt4 extends App { // explicitly catch the exhaustion of data and kill the rest of the process
   val data = new Data
 
-  def readSomeData(con: Connection): Process[Task, String] = {
+  def readSomeData(conn: Connection): Process[Task, String] = {
     val numLinesBeforeFail = nextInt(5)
-    val dataChunk = readData(data).map(s => s"$con: $s") onFailure (_ => Process(()).kill)
-    dataChunk.take(numLinesBeforeFail)  ++ Process.fail(new RuntimeException("argh!")) onFailure (thr => await(Task.delay{ println(s"read failed with [$thr]") })(_ => halt))
+    val killWhenComplete = readData(data, conn) ++ await(Task.delay{ println("Completed reading all data") })(_ => Process(()).kill)
+    killWhenComplete.take(numLinesBeforeFail) ++ boom onFailure reportFailureAndHalt
   }
 
   val results = connections.take(20) flatMap { con => readSomeData(con) }
