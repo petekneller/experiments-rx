@@ -280,9 +280,8 @@ object Writer extends App {
 }
 
 // TODO?
-// Writer
-// queues, signals
 // wye gather, mergeN
+// queues, signals, topics
 // exchange
 
 object Util {
