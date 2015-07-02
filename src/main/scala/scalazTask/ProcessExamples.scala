@@ -219,10 +219,64 @@ object Tees extends App {
   println(g.runLog.run)
 }
 
+object FailureHaltKill extends App {
+
+  // Halt is halt; every Process that doesnt' finish abnormally halts
+  // the handler onHalt is the most general one of the handlers, of which there are examples below,
+  // so I won't bother with explicit examples
+
+  // Failure kills the Process, preventing it from returning anything; and exceptions are rethrown
+  val p1: Process[Task, Int] = Process(1, 2, 3) ++ Process.fail(new RuntimeException("boo!")) ++ Process(4,5,6)
+  try {
+    println(p1.runLog.run)
+  } catch {
+    case e => println(e)
+  }
+
+  // all the handlers let you return a Process, so I guess you can continue any which way you want
+  // the most obvious thing to would be to clean up resources
+  // NB however that anything that occurs between the failure and the handler (ie. 4,5,6) is lost
+  // (in an Append process)
+  val p2 = p1 onFailure { thr => Process.await(Task.delay{ println("handling failure") })(_ => Process.halt) }
+  println(p2.runLog.run)
+
+  // but I guess you could always continue with some fallback path
+  val p3 = p1 onFailure { thr => Process.await(Task.delay{ println("continuing with some other numbers") })(_ => Process(7,8,9)) }
+  println(p3.runLog.run)
+
+  // same occurs if the failure is downstream
+  val p4 = p1 flatMap { i => if(i == 3) Process.fail(new RuntimeException("mwahaha!")) else Process(i) }
+  try {
+    println(p4.runLog.run)
+  } catch {
+    case thr => println(thr)
+  }
+
+  // actually cleanup would be better in the onComplete, that way it gets done rain or shine
+  val p5 = p1 onComplete { Process.await(Task.delay{ println("cleaning up") })(_ => Process.halt) }
+  try {
+    println(p5.runLog.run) // thats interesting! you can't actually prevent the stream from failing
+  } catch {
+    case thr => println(thr)
+  }
+
+  // Kill is an interesting one; it's a signal to upstream to indicate the process should be stopped,
+  // but existing output is still maintained
+  val p6: Process[Task, Int] = Process(1,2,3) ++ Process(4).kill ++ Process(7,8,9)
+  println(p6.runLog.run)
+  val p7 = p6 flatMap { i => if(i == 3) Process(0).kill else Process(i) }
+  println(p7.runLog.run)
+}
+
 object Writer extends App {
 
-
-
+  // this is an interesting one!
+  // Whereas the Writer monad allows you to carry output state around with a value, a Writer process
+  // lets you do similar by interleaving output with values
+  val p1: Process[Task, Int] = Process(1, 2, 3, 4, 5, 6)
+  val p2 = Process.liftW(p1) flatMapO { i => Process.emitO(i) ++ (if (i % 2 == 0) Process.tell("fizz") else Process.empty) }
+  val p3 = p2 flatMapO { i => Process.emitO(i.toString) ++ (if (i % 3 == 0) Process.tell("buzz") else Process.empty) }
+  println(p3.runLog.run)
 }
 
 // TODO?
