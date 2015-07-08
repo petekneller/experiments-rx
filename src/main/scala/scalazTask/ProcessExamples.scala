@@ -283,6 +283,7 @@ object Writer extends App {
 // wye gather, mergeN
 // queues, signals, topics
 // exchange
+// my stream-zip example from DB
 
 object Util {
 
