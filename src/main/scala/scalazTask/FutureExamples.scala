@@ -43,6 +43,11 @@ object BasicOps extends App {
   val f6 = Future.fork { printThread("forking f5"); f5 }
   f6.run
 
+  // fork a scheduled thread?
+  val f7 = Future { printThread("f7"); "f7" }
+  val f8 = Future.fork { printThread("forking f7"); f7 }
+  f8.run
+
   //suspend, async?
 }
 
