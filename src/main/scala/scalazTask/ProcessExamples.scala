@@ -279,6 +279,45 @@ object Writer extends App {
   println(p3.runLog.run)
 }
 
+object Wyes extends App {
+  import FutureExamples.printThread
+  def delayThread[A](i: A): A = {
+    printThread(s"starting $i")
+    Thread.sleep(1000)
+    printThread(s"finishing $i")
+    i
+  }
+
+  val p1 = Process.iterate(1)(_+1) take 10
+  val p2 = p1 map (i => s"side A-$i") map (delayThread(_))
+  val p3 = p1 map (i => s"side B-$i") map (delayThread(_))
+  val out: Sink[Task, String] = Process.constant{ i => Task.delay(println(s"received: $i")) }
+
+  // 'merge' is your non-deterministic equivalent of 'interleave'
+//  val p4 = p2 merge p3 to out
+  // 'yip' is the equivalent of 'zip' - it has purpose because it requests both sides simultaneously
+//  val p4 = p2 yip p3 map(_.toString) to out
+  // 'either' I suppose is a fairly 'pure' wye - you get results in the raw form the wye produces them
+//  val p4 = p2 either p3 map(_.toString) to out
+  // and as per the tee case, wyes are actually Processes in their own right that are combinator'd onto a process
+  val p4 = p2.wye(p3)(wye.either) map(_.toString) to out
+
+  p4.run.run
+}
+
+object MergeN extends App {
+  import FutureExamples.printThread
+
+  // 'mergeN' is how you parallelize the computations within a single stream (unlike the basic wyes, which blend 2 inputs together)
+
+  val p1 = Process.iterate(1)(_+1) take 20
+  val p2 = p1 map { i => Process.eval(Task.delay{ printThread(s"starting $i"); Thread.sleep(1000); printThread(s"finishing $i"); i }) }
+  //  val p3 = merge.mergeN(p2)
+  val p3 = merge.mergeN(2)(p2)
+  p3.run.run
+}
+
+
 // TODO?
 // wye gather, mergeN
 // queues, signals, topics
