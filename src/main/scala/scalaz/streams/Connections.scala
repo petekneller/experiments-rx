@@ -1,10 +1,10 @@
-package scalazTask
+package scalaz.streams
 
-import scalaz.concurrent.Task
-import Task._
-import scalaz.stream._
-import Process._
 import scala.util.Random._
+import scalaz.concurrent.Task
+import scalaz.concurrent.Task._
+import scalaz.stream.Process._
+import scalaz.stream._
 
 object Connections {
 
@@ -38,7 +38,7 @@ object Connections {
 }
 
 object Attempt0 extends App { // an infinite amount of data, bitten off in random-sized pieces
-  import Connections._
+  import scalaz.streams.Connections._
 
   def readSomeData(con: Connection): Process[Task, String] = {
     val numLinesBeforeFail = nextInt(5)
@@ -52,7 +52,7 @@ object Attempt0 extends App { // an infinite amount of data, bitten off in rando
 }
 
 object Attempt1 extends App { // same as above, but with fixed amount of data
-  import Connections._
+  import scalaz.streams.Connections._
 
   val data = new Data
 
@@ -69,7 +69,7 @@ object Attempt1 extends App { // same as above, but with fixed amount of data
 
 object Attempt2 extends App { // same as above with better failure handling on reading data,
   // allowing progress to the next connection
-  import Connections._
+  import scalaz.streams.Connections._
 
   val data = new Data
 
@@ -85,7 +85,7 @@ object Attempt2 extends App { // same as above with better failure handling on r
 }
 
 object Attempt3 extends App { // demo of what happens when you have enough conns to exhaust the whole data stream
-  import Connections._
+  import scalaz.streams.Connections._
 
   val data = new Data
 
@@ -101,7 +101,7 @@ object Attempt3 extends App { // demo of what happens when you have enough conns
 }
 
 object Attempt4 extends App { // explicitly catch the exhaustion of data and kill the rest of the process
-  import Connections._
+  import scalaz.streams.Connections._
 
   val data = new Data
 
@@ -140,7 +140,7 @@ object ConnectionsWithWriter {
 }
 
 object Attempt5 extends App { // explicitly catch the exhaustion of data and kill the rest of the process
-  import ConnectionsWithWriter._
+  import scalaz.streams.ConnectionsWithWriter._
   val data = new Data
 
   def readSomeData(conn: Connection): Writer[Task, String, String] = {

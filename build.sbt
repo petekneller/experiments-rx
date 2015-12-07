@@ -1,6 +1,6 @@
 organization := "com.github.petekneller"
 
-name := "rxscala-experiments"
+name := "experiments-rx"
 
 version := "dev"
 

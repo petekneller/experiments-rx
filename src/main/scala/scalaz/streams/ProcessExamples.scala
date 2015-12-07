@@ -1,12 +1,11 @@
-package scalazTask
+package scalaz.streams
 
-import scalaz.Id
-import scalaz.stream.Process.Halt
+import scalaz.Id._
 import scalaz._
 import scalaz.concurrent._
-import scalaz.stream._
 import scalaz.std.list._
-import scalaz.Id._
+import scalaz.stream.Process.Halt
+import scalaz.stream._
 
 object ProcessNothing extends App {
 
@@ -280,7 +279,7 @@ object Writer extends App {
 }
 
 object Wyes extends App {
-  import FutureExamples.printThread
+  import scalaz.FutureExamples.printThread
   def delayThread[A](i: A): A = {
     printThread(s"starting $i")
     Thread.sleep(1000)
@@ -306,7 +305,7 @@ object Wyes extends App {
 }
 
 object MergeN extends App {
-  import FutureExamples.printThread
+  import scalaz.FutureExamples.printThread
 
   // 'mergeN' is how you parallelize the computations within a single stream (unlike the basic wyes, which blend 2 inputs together)
 
@@ -319,10 +318,11 @@ object MergeN extends App {
 
 
 // TODO?
-// wye gather, mergeN
-// queues, signals, topics
-// exchange
+// wye gather
+// queues, signals, topics?
+// exchange?
 // my stream-zip example from DB
+// using the state monad with streams?
 
 object Util {
 

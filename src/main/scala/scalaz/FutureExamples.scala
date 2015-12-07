@@ -1,4 +1,4 @@
-package scalazTask
+package scalaz
 
 import java.util.concurrent.TimeoutException
 
