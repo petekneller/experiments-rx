@@ -316,6 +316,22 @@ object MergeN extends App {
   p3.run.run
 }
 
+object SplitCombine extends App {
+  // What if I have 2 processes that both want to receive value from the same upstream?
+  // How do I combine the outputs?
+
+  val input: Process[Task, Int] = Process(1, 2, 3, 4, 5)
+  val branch1 = process1.lift[Int, Int](_ + 1)
+  val branch2 = process1.lift[Int, Int](_ * 2)
+  val splitCombine = Process.receive1{ (a: Int) =>
+    val inputP = Process.emit(a)
+    val left = inputP |> branch1
+    val right = inputP |> branch2
+    left zip right
+  }.repeat
+  println((input |> splitCombine).runLog.run)
+}
+
 
 // TODO?
 // wye gather
