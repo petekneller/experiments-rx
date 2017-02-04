@@ -71,7 +71,7 @@ object Combinators extends App {
   println(b.map(_+1))
   println(b.flatMap(m => Process.emit(m+1)))
 
-  // Note how the below looks exactly like the above - the single process coProcess(1): Process[Task, Int]ntaining Seq(1, 2, 3) looks like it gets
+  // Note how the below looks exactly like the above - the single process containing Seq(1, 2, 3) looks like it gets
   // unravelled during the flatMap to a Process of Seq(1) and a Process of the rest
   val a = Process(1, 2, 3)
   println(a.map(_+1))
