@@ -229,7 +229,7 @@ object FailureHaltKill extends App {
   try {
     println(p1.runLog.run)
   } catch {
-    case e => println(e)
+    case e: Throwable => println(e)
   }
 
   // all the handlers let you return a Process, so I guess you can continue any which way you want
@@ -248,7 +248,7 @@ object FailureHaltKill extends App {
   try {
     println(p4.runLog.run)
   } catch {
-    case thr => println(thr)
+    case thr: Throwable => println(thr)
   }
 
   // actually cleanup would be better in the onComplete, that way it gets done rain or shine
@@ -256,7 +256,7 @@ object FailureHaltKill extends App {
   try {
     println(p5.runLog.run) // thats interesting! you can't actually prevent the stream from failing
   } catch {
-    case thr => println(thr)
+    case thr: Throwable => println(thr)
   }
 
   // Kill is an interesting one; it's a signal to upstream to indicate the process should be stopped,
