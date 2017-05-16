@@ -12,5 +12,6 @@ libraryDependencies ++= Seq(
   "io.reactivex" %% "rxscala" % "0.23.1",
   "org.scalaz" %% "scalaz-core" % "7.1.1",
   "org.scalaz.stream" %% "scalaz-stream" % "0.6a",
-  "org.scalatest" %% "scalatest" % "2.2.4" % "test"
+  "org.scalatest" %% "scalatest" % "2.2.4" % "test",
+  "co.fs2" %% "fs2-core" % "0.9.5"
 )
